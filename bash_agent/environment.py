@@ -96,7 +96,8 @@ class BashEnvironment:
             self.cwd = str(target)
         else:
             import shlex
-            result = self._execute("cd -- " + shlex.quote(path) + " && pwd -P")
+            literal_path = path if path.startswith("/") else "./" + path
+            result = self._execute("cd -P -- " + shlex.quote(literal_path) + " && pwd -P")
             if result["timed_out"]:
                 return {**result, "cwd": self.cwd, "environment_closed": self.closed}
             target = result["stdout"].strip()

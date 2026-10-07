@@ -27,12 +27,12 @@ def tool(name, description, properties):
                        "additionalProperties": False}}}
 
 
-PATH = string("Literal file or directory path; relative to the current directory. No glob or shell expansion.")
-CONTENT = string("Exact text to write; no newline is added automatically.", allow_empty=True)
+PATH = string("Literal file or directory path, like a quoted Bash argument. Relative to cwd. Do not add shell quoting; no glob or variable expansion.")
+CONTENT = string("Exact text, like Bash printf '%s' with a quoted argument. No shell expansion or automatic newline.", allow_empty=True)
 TOOLS = [
     tool("bash", "Run arbitrary Bash in the current directory. Files persist, but shell variables and cd inside a command do not. Use the cd tool to change directory across calls.",
          {"command": string("Bash command or script.")}),
-    tool("cd", "Change the persistent working directory to an existing directory inside the workspace.", {"path": PATH}),
+    tool("cd", "Change the persistent physical working directory (cd -P) to an existing directory inside the workspace.", {"path": PATH}),
     tool("pwd", "Print the current working directory.", {}),
     tool("ls", "List a directory, including hidden entries, in long format.", {"path": string("Directory to list.", ".")}),
     tool("cat", "Read a text file; long output is truncated by the environment.", {"path": PATH}),

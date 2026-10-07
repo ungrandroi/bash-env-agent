@@ -1,5 +1,6 @@
 import json
 import os
+import shlex
 import unittest
 from bash_agent.environment import BashEnvironment
 from bash_agent.tools import execute_tool
@@ -87,6 +88,33 @@ class ToolTests(unittest.TestCase):
         self.ok("rm", path="-renamed")
         for path in ("INJECTED", "ALSO", "CONTENT_ATTACK", "BACKTICK"):
             self.assertNotEqual(self.run_tool("cat", path=path)["exit_code"], 0)
+
+    def test_text_matches_quoted_bash_arguments(self):
+        paths = ["space name", "single'quote", 'double"quote', "-", "*.txt", "$name", "line\nbreak"]
+        content = "中文\n' \" $HOME $(touch NO_EXEC) `touch NO_EXEC` %s \\n"
+        for path in paths:
+            with self.subTest(path=path):
+                # Independent Bash reference: positional parameters, quoted at use.
+                reference = "set -- " + shlex.join(["./" + path, content])
+                reference += '; printf \'%s\' "$2" > "$1"; cat -- "$1" '
+                expected = self.env.bash(reference)
+                self.assertEqual(expected["exit_code"], 0, expected)
+                self.assertEqual(self.ok("cat", path=path)["stdout"], expected["stdout"])
+                self.ok("write_file", path=path, content=content + "tail")
+                actual = self.env.bash("set -- " + shlex.quote("./" + path) + '; cat -- "$1"')
+                self.assertEqual(actual["stdout"], content + "tail")
+        self.assertNotEqual(self.run_tool("cat", path="NO_EXEC")["exit_code"], 0)
+
+    def test_cd_uses_literal_names_and_physical_paths(self):
+        self.ok("mkdir", path="-")
+        self.ok("cd", path="-")
+        self.assertEqual(self.env.cwd, self.env.root + "/-")
+        self.ok("cd", path="..")
+        self.ok("mkdir", path="real/child")
+        self.ok("bash", command="ln -s real/child alias")
+        expected = self.ok("bash", command="cd -P -- alias/.. && pwd -P")["stdout"].strip()
+        self.ok("cd", path="alias/..")
+        self.assertEqual(self.env.cwd, expected)
 
     def test_invalid_arguments_never_change_files(self):
         for name, args in [
