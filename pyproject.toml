@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bash-agent-memory"
+version = "0.1.0"
+description = "A minimal Bash agent loop with replaceable memory"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+bash-agent = "bash_agent.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["bash_agent*"]
